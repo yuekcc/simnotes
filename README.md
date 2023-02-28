@@ -1,0 +1,7 @@
+# SIMNOTES
+
+一个笔记应用，WIP。
+
+## LICENSE
+
+MIT

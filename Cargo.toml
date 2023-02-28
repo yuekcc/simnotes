@@ -1,0 +1,12 @@
+[package]
+name = "simnotes_afire"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+opt-level = 3
+strip = true
+lto = true
+
+[dependencies]
+afire = { version = "2.0.0", features = ["tracing", "extensions"] }

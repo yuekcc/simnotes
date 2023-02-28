@@ -1,0 +1,50 @@
+{
+  "name": "simnotes-web",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build"
+  },
+  "author": "zhanlefeng",
+  "license": "MIT",
+  "prettier": {
+    "arrowParens": "avoid",
+    "endOfLine": "auto",
+    "printWidth": 120,
+    "quoteProps": "consistent",
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
+  "eslintConfig": {
+    "env": {
+      "es2021": true,
+      "commonjs": true,
+      "browser": true,
+      "node": true,
+      "worker": true,
+      "mocha": true
+    },
+    "parserOptions": {
+      "sourceType": "module"
+    },
+    "plugins": [
+      "prettier"
+    ],
+    "extends": [
+      "eslint:recommended",
+      "plugin:prettier/recommended"
+    ]
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^8.0.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "prettier": "^2.0.0",
+    "vite": "^4.1.4"
+  },
+  "dependencies": {
+    "vue": "^3.2.47"
+  }
+}
