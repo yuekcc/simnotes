@@ -1,16 +1,22 @@
-use afire::{extension::Logger, Middleware, Server};
+use axum::{response::Redirect, routing::get, Router};
+use tower_http::services::{ServeDir, ServeFile};
 
-mod routes;
-mod service;
-mod webapp;
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::fmt::init();
 
-fn main() {
-    let notes_service = service::NotesService::new();
-    let mut server = Server::<service::NotesService>::new("localhost", 8080).state(notes_service);
+    let web_app = ServeDir::new("web").not_found_service(ServeFile::new("web/index.html"));
 
-    webapp::attach(&mut server);
-    Logger::new().attach(&mut server);
-    routes::attach(&mut server);
+    let app = Router::new()
+        .route(
+            "/",
+            get(|| async { Redirect::permanent("/web/index.html") }),
+        )
+        .nest_service("/web", web_app);
 
-    server.start().unwrap();
+    tracing::info!("Listening on http://127.0.0.1:3000");
+    axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }
