@@ -1,9 +1,4 @@
-import { createApp, h } from 'vue';
+import { createApp } from 'vue';
+import { App, renderApp } from './UI';
 
-const Root = {
-  render() {
-    return h('div', null, 'hello');
-  },
-};
-
-createApp(Root).mount('#app');
+createApp(renderApp(App)).mount('#app');
