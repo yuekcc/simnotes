@@ -1,11 +1,16 @@
-import { VNode, h, defineComponent, ref, getCurrentInstance } from 'vue';
+import { VNode, h, reactive, defineComponent, ref, getCurrentInstance, effect, createApp } from 'vue';
 
 interface IComponent {
   build(): VNode;
 }
 
+let VM_REF = null;
+let VUE_APP_REF = null;
+let STATE_REF = null
+
 class BaseComponent {
   private _style: Record<string, string>;
+  private _events: Record<string, EventHandler> = {};
 
   get style(): Record<string, string> {
     return this._style;
@@ -15,6 +20,25 @@ class BaseComponent {
     this._style = style;
     return this;
   }
+
+  addEventListener(eventName: string, handler: EventHandler) {
+    this._events[eventName] = handler;
+  }
+
+  emitEvent(eventName: string, data: unknown) {
+    const handle = this._events[eventName];
+    if (handle && typeof handle === 'function') {
+      handle(data);
+    }
+
+    if (VM_REF) {
+      VM_REF.$forceUpdate();
+    }
+  }
+
+  beforeMount() {}
+  mounted() {}
+  beforeUnmount() {}
 }
 
 class Text extends BaseComponent implements IComponent {
@@ -32,7 +56,6 @@ class Text extends BaseComponent implements IComponent {
 
 class Button extends BaseComponent implements IComponent {
   private _label: string;
-  private _onClick: () => void;
 
   constructor(label) {
     super();
@@ -40,12 +63,12 @@ class Button extends BaseComponent implements IComponent {
   }
 
   addClickListener(listener: () => void): Button {
-    this._onClick = listener;
+    super.addEventListener('click', listener);
     return this;
   }
 
   build(): VNode {
-    return h('button', { style: this.style || {}, onClick: this._onClick }, this._label);
+    return h('button', { style: this.style || {}, onClick: event => super.emitEvent('click', event) }, this._label);
   }
 }
 
@@ -75,20 +98,24 @@ function panel(): Panel {
   return new Panel();
 }
 
-type EventHandler = () => void;
+type EventHandler = (data?: unknown) => void;
 
-function button(label: string, onClick: EventHandler) {
-  return new Button(label).addClickListener(onClick);
+function button(label: string, onClick?: EventHandler) {
+  const btn = new Button(label);
+  if (onClick) {
+    btn.addClickListener(onClick);
+  }
+
+  return btn;
 }
 
-let VM = null;
-function defineListener(func: () => void): EventHandler {
-  const vm = VM;
+function createListener(func: () => void): EventHandler {
+  const vm = VM_REF;
   const result: EventHandler = () => {
     func();
     vm?.$forceUpdate();
   };
-  VM = null;
+  VM_REF = null;
   return result;
 }
 
@@ -102,7 +129,7 @@ export class App implements IComponent {
     this._buttonName = 'a button';
     this._textName = 'a text';
 
-    this._onClick = defineListener(() => {
+    this._onClick = createListener(() => {
       this._buttonName = 'updated';
       this._textName = 'updated text';
     });
@@ -114,17 +141,31 @@ export class App implements IComponent {
   }
 }
 
-export function renderApp(AppClass: { new (): IComponent }) {
-  return defineComponent({
+export function renderApp(AppClass: { new (): IComponent }, state: object, mountPoint: string | Element) {
+  const RootComponent = defineComponent({
     setup() {
-      VM = getCurrentInstance().proxy;
+      VM_REF = getCurrentInstance().proxy;
 
-      const app = new App();
+      const entryObject = new AppClass();
+      STATE_REF = reactive(state || {});
+      effect(() => {
+        const vm = VM_REF;
+        if (vm) {
+          vm.$forceUpdate();
+        }
+      });
 
       return () => {
         console.log('render');
-        return app.build();
+        return entryObject.build();
       };
     },
   });
+
+  VUE_APP_REF = createApp(RootComponent);
+  let el = mountPoint;
+  if (typeof mountPoint === 'string') {
+    el = document.querySelector(mountPoint);
+  }
+  VUE_APP_REF.mount(el);
 }
